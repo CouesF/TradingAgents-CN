@@ -1,0 +1,23 @@
+{
+  "timestamp": "20260402_002908",
+  "total_rounds": 8,
+  "win_rounds": 6,
+  "round_win_rate": "75.0%",
+  "avg_round_return": "+3.72%",
+  "cumulative_nav": 1.2773,
+  "total_return": "+27.73%",
+  "annualized_return": "+111.61%",
+  "max_drawdown": "15.71%",
+  "nav_curve": [
+    1.0,
+    1.1665,
+    1.2461,
+    1.394,
+    1.4871,
+    1.2859,
+    1.4591,
+    1.2535,
+    1.2773
+  ],
+  "verdict": "PASS"
+}

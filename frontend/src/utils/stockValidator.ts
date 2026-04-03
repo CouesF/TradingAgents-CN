@@ -17,7 +17,8 @@ export interface StockValidationResult {
  * - 68xxxx: 科创板
  * - 00xxxx: 深圳主板
  * - 30xxxx: 创业板
- * - 43xxxx/83xxxx/87xxxx: 北交所
+ * - 43xxxx/83xxxx/87xxxx: 北交所（老代码）
+ * - 92xxxx: 北交所（新代码）
  */
 export function validateAStock(code: string): StockValidationResult {
   // 移除空格和特殊字符
@@ -33,12 +34,12 @@ export function validateAStock(code: string): StockValidationResult {
   
   // 验证前缀
   const prefix = cleanCode.substring(0, 2)
-  const validPrefixes = ['60', '68', '00', '30', '43', '83', '87']
+  const validPrefixes = ['60', '68', '00', '30', '43', '83', '87', '92']
   
   if (!validPrefixes.includes(prefix)) {
     return {
       valid: false,
-      message: 'A股代码前缀不正确（支持：60/68/00/30/43/83/87开头）'
+      message: 'A股代码前缀不正确（支持：60/68/00/30/43/83/87/92开头）'
     }
   }
   

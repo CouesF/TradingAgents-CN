@@ -1,0 +1,12 @@
+{
+  "generated_at": "2026-04-03T14:00:00.094678+08:00",
+  "today": "2026-04-03",
+  "status": "skipped_not_selection_day",
+  "message": "今天不是选股日，距离下次选股还差 8 个交易日。",
+  "first_selection_date": "2026-04-01",
+  "interval_trading_days": 10,
+  "run_time": "16:30",
+  "trigger_mode": "background_thread",
+  "latest_screening_file": "latest_screening.json",
+  "trade_days_loaded": 59
+}

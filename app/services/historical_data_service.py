@@ -334,6 +334,8 @@ class HistoricalDataService:
                 return f"{symbol}.SH"
             elif symbol.startswith(('0', '3')):
                 return f"{symbol}.SZ"
+            elif symbol.startswith('92'):
+                return f"{symbol}.BJ"
             else:
                 return f"{symbol}.SZ"  # 默认深圳
         elif market == "HK":

@@ -96,10 +96,14 @@ def create_llm_by_provider(provider: str, model: str, backend_url: str, temperat
         if not deepseek_api_key:
             raise ValueError("使用DeepSeek需要设置DEEPSEEK_API_KEY环境变量或在数据库中配置API Key")
 
+        # 优先使用传入的 backend_url，如果为空则使用环境变量，最后使用默认值
+        actual_base_url = backend_url or os.getenv('DEEPSEEK_BASE_URL', 'https://api.deepseek.com')
+        logger.info(f"🔧 [DeepSeek] 使用 API 地址: {actual_base_url}")
+
         return ChatDeepSeek(
             model=model,
             api_key=deepseek_api_key,
-            base_url=backend_url,
+            base_url=actual_base_url,
             temperature=temperature,
             max_tokens=max_tokens,
             timeout=timeout
@@ -503,11 +507,19 @@ class TradingAgentsGraph:
             # DeepSeek V3配置 - 使用支持token统计的适配器
             from tradingagents.llm_adapters.deepseek_adapter import ChatDeepSeek
 
-            deepseek_api_key = os.getenv('DEEPSEEK_API_KEY')
+            # 优先使用数据库配置的 API Key，否则从环境变量读取
+            deepseek_api_key = (self.config.get("quick_api_key") or
+                                self.config.get("deep_api_key") or
+                                os.getenv('DEEPSEEK_API_KEY'))
             if not deepseek_api_key:
-                raise ValueError("使用DeepSeek需要设置DEEPSEEK_API_KEY环境变量")
+                raise ValueError("使用DeepSeek需要在数据库中配置API Key或设置DEEPSEEK_API_KEY环境变量")
+            logger.info(f"🔑 [DeepSeek] API Key 来源: {'数据库配置' if self.config.get('quick_api_key') or self.config.get('deep_api_key') else '环境变量'}")
 
-            deepseek_base_url = os.getenv('DEEPSEEK_BASE_URL', 'https://api.deepseek.com')
+            # 优先使用配置中的 backend_url，其次使用环境变量，最后使用默认值
+            deepseek_base_url = (self.config.get("deep_backend_url") or
+                                 self.config.get("quick_backend_url") or
+                                 self.config.get("backend_url") or
+                                 os.getenv('DEEPSEEK_BASE_URL', 'https://api.deepseek.com'))
 
             # 🔧 从配置中读取模型参数（优先使用用户配置，否则使用默认值）
             quick_config = self.config.get("quick_model_config", {})
@@ -1002,11 +1014,9 @@ class TradingAgentsGraph:
                             break
 
                     # 累积状态更新
-                    if final_state is None:
-                        final_state = init_agent_state.copy()
-                    for node_name, node_update in chunk.items():
-                        if not node_name.startswith('__'):
-                            final_state.update(node_update)
+                    # 🔧 修复: 在 values 模式下，chunk 是完整状态，不是 {node_name: update}
+                    # 直接使用 chunk 作为 final_state，不需要迭代 update
+                    final_state = chunk
 
         # 记录最后一个节点的时间
         if current_node_name and current_node_start:

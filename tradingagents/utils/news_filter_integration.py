@@ -146,7 +146,7 @@ def create_filtered_realtime_news_function():
                 return original_report
             
             # 如果启用过滤且是A股，尝试重新获取并过滤
-            if any(suffix in ticker for suffix in ['.SH', '.SZ', '.SS', '.XSHE', '.XSHG']) or \
+            if any(suffix in ticker for suffix in ['.SH', '.SZ', '.BJ', '.SS', '.XSHE', '.XSHG']) or \
                (not '.' in ticker and ticker.isdigit()):
                 
                 logger.info(f"[增强实时新闻] 检测到A股代码，尝试使用过滤版东方财富新闻")
@@ -156,7 +156,7 @@ def create_filtered_realtime_news_function():
                     from tradingagents.dataflows.providers.china.akshare import get_akshare_provider
 
                     # 清理股票代码
-                    clean_ticker = ticker.replace('.SH', '').replace('.SZ', '').replace('.SS', '')\
+                    clean_ticker = ticker.replace('.SH', '').replace('.SZ', '').replace('.BJ', '').replace('.SS', '')\
                                     .replace('.XSHE', '').replace('.XSHG', '')
 
                     # 使用 AKShareProvider 获取新闻（如果有相应方法）

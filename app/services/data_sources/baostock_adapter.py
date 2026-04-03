@@ -55,8 +55,9 @@ class BaoStockAdapter(DataSourceAdapter):
                 df = df[df['type'] == '1']
                 df['symbol'] = df['code'].str.replace(r'^(sh|sz)\.', '', regex=True)
                 df['ts_code'] = (
-                    df['code'].str.replace('sh.', '').str.replace('sz.', '')
-                    + df['code'].str.extract(r'^(sh|sz)\.').iloc[:, 0].str.upper().str.replace('SH', '.SH').str.replace('SZ', '.SZ')
+                    df['code'].str.replace(r'^(sh|sz|bj)\.', '', regex=True)
+                    + df['code'].str.extract(r'^(sh|sz|bj)\.').iloc[:, 0].str.upper()
+                      .str.replace('SH', '.SH').str.replace('SZ', '.SZ').str.replace('BJ', '.BJ')
                 )
                 df['name'] = df['code_name']
                 df['area'] = ''
@@ -165,8 +166,15 @@ class BaoStockAdapter(DataSourceAdapter):
                                     valuation_data.append(rs_valuation.get_row_data())
                                 if valuation_data:
                                     row = valuation_data[0]
-                                    symbol = code.replace('sh.', '').replace('sz.', '')
-                                    ts_code = f"{symbol}.SH" if code.startswith('sh.') else f"{symbol}.SZ"
+                                    symbol = code.replace('sh.', '').replace('sz.', '').replace('bj.', '')
+                                    if code.startswith('sh.'):
+                                        ts_code = f"{symbol}.SH"
+                                    elif code.startswith('sz.'):
+                                        ts_code = f"{symbol}.SZ"
+                                    elif code.startswith('bj.'):
+                                        ts_code = f"{symbol}.BJ"
+                                    else:
+                                        ts_code = symbol
                                     pe_ttm = self._safe_float(row[3]) if len(row) > 3 else None
                                     pb_mrq = self._safe_float(row[4]) if len(row) > 4 else None
                                     ps_ttm = self._safe_float(row[5]) if len(row) > 5 else None

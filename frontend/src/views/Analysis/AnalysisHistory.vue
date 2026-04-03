@@ -201,6 +201,24 @@
 
         <el-table-column prop="stock_code" label="股票代码" width="120" />
         <el-table-column prop="stock_name" label="股票名称" width="150" />
+        <el-table-column label="现价" width="120">
+          <template #default="{ row }">
+            {{ formatPrice(row.current_price) }}
+          </template>
+        </el-table-column>
+        <el-table-column label="目标价" width="120">
+          <template #default="{ row }">
+            {{ formatPrice(row.target_price) }}
+          </template>
+        </el-table-column>
+        <el-table-column label="决策" width="110">
+          <template #default="{ row }">
+            <el-tag v-if="row.decision_action" :type="getActionTagType(row.decision_action)">
+              {{ row.decision_action }}
+            </el-tag>
+            <span v-else>-</span>
+          </template>
+        </el-table-column>
 
         <el-table-column prop="status" label="状态" width="100">
           <template #default="{ row }">
@@ -347,14 +365,22 @@ const loadAnalysisHistory = async () => {
     const body = (res as any)?.data?.data || {}
 
     const list = body.tasks || []
-    historyList.value = list.map((x: any) => ({
-      task_id: x.task_id || x.analysis_id || x.id || '-',
-      stock_code: x.symbol || x.stock_code || x.stock_symbol || '-',  // 兼容新旧字段
-      stock_name: x.stock_name || x.name || '',
-      status: x.status || 'pending',
-      created_at: x.start_time || x.created_at || new Date().toISOString(),
-      execution_time: x.execution_time || x.elapsed_time || 0
-    }))
+    historyList.value = list.map((x: any) => {
+      const resultData = x.result_data || x.result || {}
+      const decision = resultData.decision || {}
+
+      return {
+        task_id: x.task_id || x.analysis_id || x.id || '-',
+        stock_code: x.symbol || x.stock_code || x.stock_symbol || '-',  // 兼容新旧字段
+        stock_name: x.stock_name || x.name || '',
+        status: x.status || 'pending',
+        created_at: x.start_time || x.created_at || new Date().toISOString(),
+        execution_time: x.execution_time || x.elapsed_time || 0,
+        current_price: extractCurrentPrice(resultData),
+        target_price: decision.target_price ?? resultData.target_price ?? decision.targetPrice ?? resultData.targetPrice,
+        decision_action: decision.action || resultData.decision_action || resultData.action
+      }
+    })
 
     totalRecords.value = body.total ?? historyList.value.length
   } catch (e) {
@@ -430,6 +456,33 @@ const deleteRecord = async (task: any) => {
   } catch {
     // 用户取消
   }
+}
+
+const formatPrice = (value: unknown) => {
+  if (value === null || value === undefined || value === '') return '-'
+  if (typeof value === 'number' && Number.isFinite(value)) return value.toFixed(2)
+  const parsed = Number(value)
+  return Number.isFinite(parsed) ? parsed.toFixed(2) : '-'
+}
+
+const extractCurrentPrice = (resultData: any) => {
+  if (!resultData || typeof resultData !== 'object') return undefined
+  return (
+    resultData.current_price ??
+    resultData.currentPrice ??
+    resultData.latest_price ??
+    resultData.price
+  )
+}
+
+const getActionTagType = (action: string): 'primary' | 'success' | 'warning' | 'info' | 'danger' => {
+  const actionTypes: Record<string, 'primary' | 'success' | 'warning' | 'info' | 'danger'> = {
+    '买入': 'success',
+    '持有': 'warning',
+    '卖出': 'danger',
+    '观望': 'info'
+  }
+  return actionTypes[action] || 'info'
 }
 
 const getStatusType = (status: string): 'primary' | 'success' | 'warning' | 'info' | 'danger' => {
