@@ -406,6 +406,8 @@ class NewsDataService:
             if len(symbol) == 6:
                 if symbol.startswith(('60', '68')):
                     return f"{symbol}.SH"
+                elif symbol.startswith('92'):
+                    return f"{symbol}.BJ"
                 elif symbol.startswith(('00', '30')):
                     return f"{symbol}.SZ"
         

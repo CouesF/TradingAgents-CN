@@ -322,7 +322,7 @@ class RealtimeNewsAggregator:
                     logger.info(f"[中文财经新闻] 检测到美股代码 {ticker}，跳过东方财富新闻获取")
                 else:
                     # 处理A股和港股代码
-                    clean_ticker = ticker.replace('.SH', '').replace('.SZ', '').replace('.SS', '')\
+                    clean_ticker = ticker.replace('.SH', '').replace('.SZ', '').replace('.BJ', '').replace('.SS', '')\
                                     .replace('.HK', '').replace('.XSHE', '').replace('.XSHG', '')
 
                     # 获取东方财富新闻
@@ -699,7 +699,7 @@ def get_realtime_stock_news(ticker: str, curr_date: str, hours_back: int = 6) ->
 
     if '.' in ticker:
         logger.info(f"[新闻分析] 检测到ticker包含点号，进行后缀匹配")
-        if any(suffix in ticker for suffix in ['.SH', '.SZ', '.SS', '.XSHE', '.XSHG']):
+        if any(suffix in ticker for suffix in ['.SH', '.SZ', '.BJ', '.SS', '.XSHE', '.XSHG']):
             stock_type = "A股"
             is_china_stock = True
             logger.info(f"[新闻分析] 匹配到A股后缀，股票类型: {stock_type}")
@@ -746,7 +746,7 @@ def get_realtime_stock_news(ticker: str, curr_date: str, hours_back: int = 6) ->
             logger.info(f"[新闻分析] 成功创建 AKShare Provider 实例")
 
             # 处理A股代码
-            clean_ticker = ticker.replace('.SH', '').replace('.SZ', '').replace('.SS', '')\
+            clean_ticker = ticker.replace('.SH', '').replace('.SZ', '').replace('.BJ', '').replace('.SS', '')\
                             .replace('.XSHE', '').replace('.XSHG', '')
             logger.info(f"[新闻分析] 原始ticker: {ticker} -> 清理后ticker: {clean_ticker}")
 
@@ -908,7 +908,7 @@ def get_realtime_stock_news(ticker: str, curr_date: str, hours_back: int = 6) ->
         # 根据股票类型构建搜索查询
         if stock_type == "A股":
             # A股使用中文关键词
-            clean_ticker = ticker.replace('.SH', '').replace('.SZ', '').replace('.SS', '')\
+            clean_ticker = ticker.replace('.SH', '').replace('.SZ', '').replace('.BJ', '').replace('.SS', '')\
                            .replace('.XSHE', '').replace('.XSHG', '')
             search_query = f"{clean_ticker} 股票 公司 财报 新闻"
             logger.info(f"[新闻分析] 开始从Google获取A股 {clean_ticker} 的中文新闻数据，查询: {search_query}")

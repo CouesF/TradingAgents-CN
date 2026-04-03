@@ -938,7 +938,7 @@ class TushareProvider(BaseStockDataProvider):
         title = news_item.get("title", "").lower()
 
         # 标准化股票代码
-        symbol_clean = symbol.replace('.SH', '').replace('.SZ', '').zfill(6)
+        symbol_clean = symbol.replace('.SH', '').replace('.SZ', '').replace('.BJ', '').zfill(6)
 
         # 关键词匹配
         return any([
@@ -1233,8 +1233,14 @@ class TushareProvider(BaseStockDataProvider):
 
         # 6位数字代码，需要添加后缀
         if symbol.isdigit() and len(symbol) == 6:
-            if symbol.startswith(('60', '68', '90')):
+            # 🔥 北交所：92开头（新代码，如 920000.BJ）
+            # 注意：8开头的是老三板代码，也归北交所
+            if symbol.startswith(('8', '92')):
+                return f"{symbol}.BJ"  # 北交所
+            # 上交所：600、601、603、605、688开头（主板、科创板）
+            elif symbol.startswith(('60', '688')):
                 return f"{symbol}.SH"  # 上交所
+            # 深交所：000、001、002、300、301开头（主板、创业板）
             else:
                 return f"{symbol}.SZ"  # 深交所
 
@@ -1485,8 +1491,26 @@ class TushareProvider(BaseStockDataProvider):
                     break
 
             if not last_year_same:
-                # 缺少去年同期数据，无法准确计算 TTM
-                self.logger.warning(f"⚠️ TTM计算失败: 缺少去年同期数据（需要: {last_year_same_period}，最新期: {latest_period}）")
+                # 缺少去年同期数据，尝试使用简化计算
+                self.logger.debug(f"⚠️ TTM计算: 缺少去年同期数据（需要: {last_year_same_period}），尝试简化计算")
+                
+                # 如果是Q1，直接使用本期值（无法准确计算TTM）
+                if month_day == '0331':
+                    self.logger.debug(f"✅ TTM简化计算: Q1数据，返回 None（建议等待更多数据）")
+                    return None
+                
+                # 如果是Q2/Q3/Q4，尝试简单年化（不够准确，但总比没有好）
+                # 注意：这种方法对季节性行业不准确，仅作为降级方案
+                if month_day == '0630':  # Q2
+                    ttm_estimate = latest_value * 2  # 半年数据 × 2
+                    self.logger.debug(f"✅ TTM简化计算: Q2数据年化 = {latest_value:.2f} × 2 = {ttm_estimate:.2f}（估算值）")
+                    return ttm_estimate
+                elif month_day == '0930':  # Q3
+                    ttm_estimate = latest_value * 4 / 3  # 9个月数据 × 4/3
+                    self.logger.debug(f"✅ TTM简化计算: Q3数据年化 = {latest_value:.2f} × 4/3 = {ttm_estimate:.2f}（估算值）")
+                    return ttm_estimate
+                
+                # 其他情况返回None
                 return None
 
             last_year_value = self._safe_float(last_year_same.get(field))
@@ -1505,9 +1529,28 @@ class TushareProvider(BaseStockDataProvider):
                     break
 
             if not base_period:
-                # 没有找到合适的年报，无法计算
-                # 这种情况通常发生在：最新期是 2025Q1，但 2024年报还没公布
-                self.logger.warning(f"⚠️ TTM计算失败: 缺少基准年报（需要在 {last_year_same_period} 之后的年报，最新期: {latest_period}）")
+                # 没有找到合适的年报，尝试降级计算
+                self.logger.debug(f"⚠️ TTM计算: 缺少基准年报（需要在 {last_year_same_period} 之后的年报），尝试降级计算")
+                
+                # 降级方案：使用去年同期数据进行简单估算
+                # TTM估算 = 去年同期 + (本期 - 去年同期) × 调整系数
+                if last_year_same and last_year_value is not None:
+                    growth = latest_value - last_year_value
+                    
+                    # 根据季度调整系数
+                    if month_day == '0331':  # Q1
+                        # Q1 → 全年：假设增长率保持，估算全年
+                        ttm_estimate = last_year_value + growth * 4
+                    elif month_day == '0630':  # Q2
+                        ttm_estimate = last_year_value + growth * 2
+                    elif month_day == '0930':  # Q3
+                        ttm_estimate = last_year_value + growth * 4 / 3
+                    else:
+                        ttm_estimate = latest_value  # 其他情况直接使用本期值
+                    
+                    self.logger.debug(f"✅ TTM降级计算: 基于去年同期增长估算 = {ttm_estimate:.2f}（估算值）")
+                    return ttm_estimate if ttm_estimate > 0 else None
+                
                 return None
 
             base_value = self._safe_float(base_period.get(field))

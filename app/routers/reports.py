@@ -85,6 +85,42 @@ def get_stock_name(stock_code: str) -> str:
         return stock_code
 
 
+def _parse_price(value: Any) -> Optional[float]:
+    """解析价格字段，兼容字符串/数值"""
+    if value is None:
+        return None
+    try:
+        if isinstance(value, (int, float)):
+            return float(value)
+        if isinstance(value, str):
+            cleaned = value.replace("$", "").replace("¥", "").replace("￥", "").strip()
+            if not cleaned or cleaned.lower() == "none":
+                return None
+            return float(cleaned)
+    except (ValueError, TypeError):
+        return None
+    return None
+
+
+def _normalize_decision_action(action: Any) -> Optional[str]:
+    if not action or not isinstance(action, str):
+        return None
+    action_clean = action.strip()
+    if not action_clean:
+        return None
+    action_map = {
+        "BUY": "买入",
+        "SELL": "卖出",
+        "HOLD": "持有",
+        "WATCH": "观望",
+        "buy": "买入",
+        "sell": "卖出",
+        "hold": "持有",
+        "watch": "观望"
+    }
+    return action_map.get(action_clean, action_map.get(action_clean.upper(), action_clean))
+
+
 # 统一构建报告查询：支持 _id(ObjectId) / analysis_id / task_id 三种
 def _build_report_query(report_id: str) -> Dict[str, Any]:
     ors = [
@@ -119,7 +155,7 @@ class ReportListResponse(BaseModel):
 @router.get("/list", response_model=Dict[str, Any])
 async def get_reports_list(
     page: int = Query(1, ge=1, description="页码"),
-    page_size: int = Query(20, ge=1, le=100, description="每页数量"),
+    page_size: int = Query(50, ge=1, le=100, description="每页数量"),
     search_keyword: Optional[str] = Query(None, description="搜索关键词"),
     market_filter: Optional[str] = Query(None, description="市场筛选（A股/港股/美股）"),
     start_date: Optional[str] = Query(None, description="开始日期"),
@@ -196,6 +232,23 @@ async def get_reports_list(
             created_at = doc.get("created_at", datetime.utcnow())
             created_at_tz = to_config_tz(created_at)  # 转换为 UTC+8 并添加时区信息
 
+            decision = doc.get("decision", {}) or {}
+            decision_action = _normalize_decision_action(
+                decision.get("action") or decision.get("decision_action")
+            )
+
+            current_price = _parse_price(
+                doc.get("current_price")
+                or doc.get("latest_price")
+                or (decision.get("current_price") if isinstance(decision, dict) else None)
+                or decision.get("price")
+            )
+
+            target_price = _parse_price(
+                doc.get("target_price")
+                or (decision.get("target_price") if isinstance(decision, dict) else None)
+            )
+
             report = {
                 "id": str(doc["_id"]),
                 "analysis_id": doc.get("analysis_id", ""),
@@ -214,7 +267,13 @@ async def get_reports_list(
                 "summary": doc.get("summary", ""),
                 "file_size": len(str(doc.get("reports", {}))),  # 估算大小
                 "source": doc.get("source", "unknown"),
-                "task_id": doc.get("task_id", "")
+                "task_id": doc.get("task_id", ""),
+                "current_price": current_price,
+                "target_price": target_price,
+                "decision_action": decision_action,
+                "result_data": {
+                    "decision": decision
+                }
             }
             reports.append(report)
 

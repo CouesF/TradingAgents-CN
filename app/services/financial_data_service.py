@@ -417,6 +417,8 @@ class FinancialDataService:
         if market == "CN":
             if symbol.startswith("6"):
                 return f"{symbol}.SH"
+            if symbol.startswith("92"):
+                return f"{symbol}.BJ"
             else:
                 return f"{symbol}.SZ"
         return symbol

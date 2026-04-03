@@ -1196,7 +1196,7 @@ class Toolkit:
                 # 1. 尝试获取AKShare东方财富新闻
                 try:
                     # 处理股票代码
-                    clean_ticker = ticker.replace('.SH', '').replace('.SZ', '').replace('.SS', '')\
+                    clean_ticker = ticker.replace('.SH', '').replace('.SZ', '').replace('.BJ', '').replace('.SS', '')\
                                    .replace('.HK', '').replace('.XSHE', '').replace('.XSHG', '')
                     
                     logger.info(f"🇨🇳🇭🇰 [统一新闻工具] 尝试获取东方财富新闻: {clean_ticker}")
@@ -1235,7 +1235,7 @@ class Toolkit:
                     # 获取公司中文名称用于搜索
                     if is_china:
                         # A股使用股票代码搜索，添加更多中文关键词
-                        clean_ticker = ticker.replace('.SH', '').replace('.SZ', '').replace('.SS', '')\
+                        clean_ticker = ticker.replace('.SH', '').replace('.SZ', '').replace('.BJ', '').replace('.SS', '')\
                                        .replace('.XSHE', '').replace('.XSHG', '')
                         search_query = f"{clean_ticker} 股票 公司 财报 新闻"
                         logger.info(f"🇨🇳 [统一新闻工具] A股Google新闻搜索关键词: {search_query}")

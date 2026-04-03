@@ -85,20 +85,25 @@
             </div>
           </template>
         </el-table-column>
-        
-        <el-table-column prop="type" label="报告类型" width="120">
+
+        <el-table-column label="现价" width="120">
           <template #default="{ row }">
-            <el-tag :type="getTypeColor(row.type)">
-              {{ getTypeText(row.type) }}
-            </el-tag>
+            {{ formatPrice(row.current_price) }}
           </template>
         </el-table-column>
-        
-        <el-table-column prop="format" label="格式" width="100">
+
+        <el-table-column label="目标价" width="120">
           <template #default="{ row }">
-            <el-tag size="small" effect="plain">
-              {{ row.format.toUpperCase() }}
+            {{ formatPrice(row.target_price) }}
+          </template>
+        </el-table-column>
+
+        <el-table-column label="决策" width="110">
+          <template #default="{ row }">
+            <el-tag v-if="row.decision_action" :type="getActionTagType(row.decision_action)">
+              {{ row.decision_action }}
             </el-tag>
+            <span v-else class="text-gray">-</span>
           </template>
         </el-table-column>
         
@@ -122,6 +127,22 @@
         <el-table-column prop="created_at" label="创建时间" width="180">
           <template #default="{ row }">
             {{ formatTime(row.created_at) }}
+          </template>
+        </el-table-column>
+
+        <el-table-column prop="type" label="报告类型" width="120">
+          <template #default="{ row }">
+            <el-tag :type="getTypeColor(row.type)">
+              {{ getTypeText(row.type) }}
+            </el-tag>
+          </template>
+        </el-table-column>
+
+        <el-table-column prop="format" label="格式" width="100">
+          <template #default="{ row }">
+            <el-tag size="small" effect="plain">
+              {{ row.format.toUpperCase() }}
+            </el-tag>
           </template>
         </el-table-column>
 
@@ -207,10 +228,10 @@ const marketFilter = ref('')
 const dateRange = ref<[string, string] | null>(null)
 const selectedReports = ref([])
 const currentPage = ref(1)
-const pageSize = ref(20)
+const pageSize = ref(50)
 const totalReports = ref(0)
 
-const reports = ref([])
+const reports = ref<any[]>([])
 
 // 计算属性
 const filteredReports = computed(() => {
@@ -252,7 +273,18 @@ const fetchReports = async () => {
     const result = await response.json()
 
     if (result.success) {
-      reports.value = result.data.reports
+      const list = result.data.reports || []
+      reports.value = list.map((item: any) => {
+        const resultData = parseResultData(item.result_data ?? item.result)
+        const decision = extractDecision(resultData)
+
+        return {
+          ...item,
+          current_price: extractCurrentPrice(item, resultData, decision),
+          target_price: extractTargetPrice(item, resultData, decision),
+          decision_action: extractDecisionAction(item, resultData, decision)
+        }
+      })
       totalReports.value = result.data.total
     } else {
       throw new Error(result.message || '获取报告列表失败')
@@ -447,6 +479,82 @@ const getStatusText = (status: string) => {
     failed: '失败'
   }
   return statusMap[status] || status
+}
+
+const getActionTagType = (action: string): 'primary' | 'success' | 'warning' | 'info' | 'danger' => {
+  const actionTypes: Record<string, 'primary' | 'success' | 'warning' | 'info' | 'danger'> = {
+    '买入': 'success',
+    '持有': 'warning',
+    '卖出': 'danger',
+    '观望': 'info'
+  }
+  return actionTypes[action] || 'info'
+}
+
+const formatPrice = (value: unknown) => {
+  if (value === null || value === undefined || value === '') return '-'
+  if (typeof value === 'number' && Number.isFinite(value)) return value.toFixed(2)
+  const parsed = Number(value)
+  return Number.isFinite(parsed) ? parsed.toFixed(2) : '-'
+}
+
+const parseResultData = (raw: unknown) => {
+  if (!raw) return {}
+  if (typeof raw === 'object') return raw
+  if (typeof raw === 'string') {
+    try {
+      const parsed = JSON.parse(raw)
+      return parsed && typeof parsed === 'object' ? parsed : {}
+    } catch (error) {
+      console.warn('解析 result_data 失败:', error)
+      return {}
+    }
+  }
+  return {}
+}
+
+const extractDecision = (resultData: any) => {
+  if (!resultData || typeof resultData !== 'object') return {}
+  return resultData.decision || resultData.action || {}
+}
+
+const extractDecisionAction = (item: any, resultData: any, decision: any) => {
+  return (
+    item?.decision_action ??
+    item?.decision?.action ??
+    decision?.action ??
+    decision?.decision_action ??
+    resultData?.decision_action ??
+    resultData?.action
+  )
+}
+
+const extractTargetPrice = (item: any, resultData: any, decision: any) => {
+  return (
+    item?.target_price ??
+    item?.targetPrice ??
+    decision?.target_price ??
+    decision?.targetPrice ??
+    resultData?.target_price ??
+    resultData?.targetPrice
+  )
+}
+
+const extractCurrentPrice = (item: any, resultData: any, decision: any) => {
+  return (
+    item?.current_price ??
+    item?.currentPrice ??
+    resultData?.current_price ??
+    resultData?.currentPrice ??
+    resultData?.latest_price ??
+    resultData?.latestPrice ??
+    resultData?.price ??
+    decision?.current_price ??
+    decision?.currentPrice ??
+    decision?.latest_price ??
+    decision?.latestPrice ??
+    decision?.price
+  )
 }
 
 import { formatDateTime } from '@/utils/datetime'

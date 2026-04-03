@@ -1664,7 +1664,7 @@ class DataSourceManager:
             elif symbol.startswith(('0', '3', '2')):
                 # 深圳股票：000001 -> sz000001
                 akshare_symbol = f"sz{symbol}"
-            elif symbol.startswith(('8', '4')):
+            elif symbol.startswith(('8', '4', '9')):
                 # 北京股票：830000 -> bj830000
                 akshare_symbol = f"bj{symbol}"
             else:

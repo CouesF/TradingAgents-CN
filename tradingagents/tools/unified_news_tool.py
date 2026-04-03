@@ -117,7 +117,7 @@ class UnifiedNewsAnalyzer:
             collection = db.stock_news
 
             # 标准化股票代码（去除后缀）
-            clean_code = stock_code.replace('.SH', '').replace('.SZ', '').replace('.SS', '')\
+            clean_code = stock_code.replace('.SH', '').replace('.SZ', '').replace('.BJ', '').replace('.SS', '')\
                                    .replace('.XSHE', '').replace('.XSHG', '').replace('.HK', '')
 
             # 查询最近30天的新闻（扩大时间范围）
@@ -201,7 +201,7 @@ class UnifiedNewsAnalyzer:
             import concurrent.futures
 
             # 标准化股票代码（去除后缀）
-            clean_code = stock_code.replace('.SH', '').replace('.SZ', '').replace('.SS', '')\
+            clean_code = stock_code.replace('.SH', '').replace('.SZ', '').replace('.BJ', '').replace('.SS', '')\
                                    .replace('.XSHE', '').replace('.XSHG', '').replace('.HK', '')
 
             logger.info(f"[统一新闻工具] 🔄 开始同步 {clean_code} 的新闻...")

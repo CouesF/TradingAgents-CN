@@ -71,7 +71,7 @@ class AKShareAdapter(DataSourceAdapter):
                     return f"{code}.SH"
                 elif code.startswith(('00', '30', '20')):
                     return f"{code}.SZ"
-                elif code.startswith(('8', '4')):
+                elif code.startswith(('92')):
                     return f"{code}.BJ"
                 else:
                     return f"{code}.SZ"  # 默认深圳

@@ -312,6 +312,9 @@ class StockDataService:
             if ".SS" in full_symbol or ".SH" in full_symbol:
                 exchange = "SSE"
                 exchange_name = "上海证券交易所"
+            elif ".BJ" in full_symbol:
+                exchange = "BSE"
+                exchange_name = "北京证券交易所"
             else:
                 exchange = "SZSE"
                 exchange_name = "深圳证券交易所"

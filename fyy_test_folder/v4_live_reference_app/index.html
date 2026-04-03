@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>v4 实盘每日指引</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="page">
+      <header class="topbar">
+        <h1>v4 实盘每日指引</h1>
+        <div class="topbar-right">
+          <span id="clockDisplay" class="clock"></span>
+          <span id="sessionBadge" class="badge"></span>
+        </div>
+      </header>
+
+      <section class="card">
+        <div class="card-toolbar">
+          <span id="syncStatus" class="muted-text">服务端状态加载中...</span>
+          <div class="toolbar-actions">
+            <button id="refreshBtn" type="button" class="small-btn">刷新状态</button>
+            <button id="refreshQuotesBtn" type="button" class="small-btn">刷新行情</button>
+            <button id="exportBtn" type="button" class="small-btn">导出服务端数据</button>
+          </div>
+        </div>
+      </section>
+
+      <section id="todayBriefing" class="card highlight-card">
+        <h2>今日概况</h2>
+        <div id="briefingContent"></div>
+      </section>
+
+      <section id="todayActions" class="card">
+        <h2>今日待办</h2>
+        <div id="actionList" class="action-list"></div>
+      </section>
+
+      <section class="card">
+        <h2>自动选股结果</h2>
+        <div id="autoScreeningContent"></div>
+      </section>
+
+      <section class="card">
+        <h2>当前持仓</h2>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>代码</th>
+                <th>名称</th>
+                <th>股数</th>
+                <th>买入价</th>
+                <th>最新价</th>
+                <th>盈亏%</th>
+                <th>止损价</th>
+                <th>距止损</th>
+                <th>条件单</th>
+                <th>状态</th>
+              </tr>
+            </thead>
+            <tbody id="holdingBody"></tbody>
+          </table>
+        </div>
+        <div class="card-footer">
+          <span id="portfolioSummary"></span>
+          <span id="quoteStatus" class="muted-text"></span>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>操作记录</h2>
+        <div id="operationLog" class="log-list"></div>
+      </section>
+
+      <details class="card muted-card">
+        <summary>策略参数（固定）</summary>
+        <div class="param-grid">
+          <div><strong>选股间隔</strong><span>10 交易日</span></div>
+          <div><strong>持有天数</strong><span>10 交易日</span></div>
+          <div><strong>止损线</strong><span>-8%</span></div>
+          <div><strong>bull 持仓</strong><span>5 只</span></div>
+          <div><strong>neutral 持仓</strong><span>3 只</span></div>
+          <div><strong>bear 持仓</strong><span>2 只</span></div>
+          <div><strong>新鲜度惩罚</strong><span>0.7</span></div>
+          <div><strong>行业限制</strong><span>每行业最多 2 只</span></div>
+          <div><strong>大盘基准</strong><span>沪深300 (000300)</span></div>
+          <div><strong>初始资金</strong><span>¥50,000</span></div>
+        </div>
+      </details>
+    </div>
+    <script src="app.js"></script>
+  </body>
+</html>

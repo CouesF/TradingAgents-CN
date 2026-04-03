@@ -39,7 +39,10 @@ class StockUtils:
 
         ticker = str(ticker).strip().upper()
 
-        # 中国A股：6位数字
+        # 中国A股：6位数字（包括沪深主板、创业板、科创板、北交所）
+        # 北交所：8或9开头（如 830000、920000）
+        # 上交所：60、68、90开头（主板、科创板）
+        # 深交所：00、30开头（主板、创业板）
         if re.match(r'^\d{6}$', ticker):
             return StockMarket.CHINA_A
 

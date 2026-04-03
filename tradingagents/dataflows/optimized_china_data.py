@@ -221,24 +221,31 @@ class OptimizedChinaDataProvider:
         # 2. 检查文件缓存（除非强制刷新）
         if not force_refresh:
             # 查找基本面数据缓存
-            for metadata_file in self.cache.metadata_dir.glob(f"*_meta.json"):
+            # 🔧 修复：检查 cache 对象是否有 metadata_dir 属性（IntegratedCacheManager 可能没有）
+            if hasattr(self.cache, 'metadata_dir'):
                 try:
-                    import json
-                    with open(metadata_file, 'r', encoding='utf-8') as f:
-                        metadata = json.load(f)
+                    for metadata_file in self.cache.metadata_dir.glob(f"*_meta.json"):
+                        try:
+                            import json
+                            with open(metadata_file, 'r', encoding='utf-8') as f:
+                                metadata = json.load(f)
 
-                    if (metadata.get('symbol') == symbol and
-                        metadata.get('data_type') == 'fundamentals' and
-                        metadata.get('market_type') == 'china'):
+                            if (metadata.get('symbol') == symbol and
+                                metadata.get('data_type') == 'fundamentals' and
+                                metadata.get('market_type') == 'china'):
 
-                        cache_key = metadata_file.stem.replace('_meta', '')
-                        if self.cache.is_cache_valid(cache_key, symbol=symbol, data_type='fundamentals'):
-                            cached_data = self.cache.load_stock_data(cache_key)
-                            if cached_data:
-                                logger.info(f"⚡ [数据来源: 文件缓存] 从缓存加载A股基本面数据: {symbol}")
-                                return cached_data
-                except Exception:
-                    continue
+                                cache_key = metadata_file.stem.replace('_meta', '')
+                                if self.cache.is_cache_valid(cache_key, symbol=symbol, data_type='fundamentals'):
+                                    cached_data = self.cache.load_stock_data(cache_key)
+                                    if cached_data:
+                                        logger.info(f"⚡ [数据来源: 文件缓存] 从缓存加载A股基本面数据: {symbol}")
+                                        return cached_data
+                        except Exception:
+                            continue
+                except Exception as e:
+                    logger.debug(f"📊 [文件缓存] 检查文件缓存失败: {e}")
+            else:
+                logger.debug(f"📊 [文件缓存] 当前缓存管理器不支持文件缓存（使用 IntegratedCacheManager）")
 
         # 缓存未命中，生成基本面分析
         logger.debug(f"🔍 [数据来源: 生成分析] 生成A股基本面分析: {symbol}")
@@ -252,9 +259,10 @@ class OptimizedChinaDataProvider:
             fundamentals_data = self._generate_fundamentals_report(symbol, stock_basic_info)
 
             # 保存到缓存
+            # 🔧 修复：IntegratedCacheManager.save_fundamentals_data() 的参数是 data，不是 fundamentals_data
             self.cache.save_fundamentals_data(
                 symbol=symbol,
-                fundamentals_data=fundamentals_data,
+                data=fundamentals_data,  # 修正参数名
                 data_source="unified_analysis"  # 统一数据源分析
             )
 
@@ -855,7 +863,7 @@ class OptimizedChinaDataProvider:
                     db = db_client['tradingagents']
 
                     # 标准化股票代码为6位
-                    code6 = symbol.replace('.SH', '').replace('.SZ', '').zfill(6)
+                    code6 = symbol.replace('.SH', '').replace('.SZ', '').replace('.BJ', '').zfill(6)
 
                     # 从 market_quotes 获取实时股价
                     quote = db.market_quotes.find_one({"code": code6})
@@ -1052,7 +1060,7 @@ class OptimizedChinaDataProvider:
                 if db_manager.is_mongodb_available():
                     client = db_manager.get_mongodb_client()
                     # 从symbol中提取股票代码
-                    stock_code = latest_indicators.get('code') or latest_indicators.get('symbol', '').replace('.SZ', '').replace('.SH', '')
+                    stock_code = latest_indicators.get('code') or latest_indicators.get('symbol', '').replace('.SZ', '').replace('.SH', '').replace('.BJ', '')
 
                     logger.info(f"📊 [PE计算] 开始计算股票 {stock_code} 的PE/PB")
 
@@ -1397,7 +1405,7 @@ class OptimizedChinaDataProvider:
 
             try:
                 # 获取股票代码
-                stock_code = stock_info.get('code', '').replace('.SH', '').replace('.SZ', '').zfill(6)
+                stock_code = stock_info.get('code', '').replace('.SH', '').replace('.SZ', '').replace('.BJ', '').zfill(6)
                 if stock_code:
                     logger.info(f"📊 [AKShare-PE计算-第1层] 尝试使用实时PE/PB计算: {stock_code}")
 
@@ -2056,6 +2064,11 @@ class OptimizedChinaDataProvider:
     def _try_get_old_cache(self, symbol: str, start_date: str, end_date: str) -> Optional[str]:
         """尝试获取过期的缓存数据作为备用"""
         try:
+            # 🔧 修复：检查 cache 对象是否有 metadata_dir 属性
+            if not hasattr(self.cache, 'metadata_dir'):
+                logger.debug(f"📊 [过期缓存] 当前缓存管理器不支持文件缓存")
+                return None
+            
             # 查找任何相关的缓存，不考虑TTL
             for metadata_file in self.cache.metadata_dir.glob(f"*_meta.json"):
                 try:
